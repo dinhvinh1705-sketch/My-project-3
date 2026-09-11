@@ -1,86 +1,72 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-
+using UnityEngine.Events;
+using Unity.VisualScripting;
 public class Player : MonoBehaviour
 {
+    
     InputAction MoveAction;
     InputAction JumpAction;
-    InputAction AttackAction;
 
+    InputAction ShootAction;
+    
     [SerializeField] Rigidbody2D rb;
     [SerializeField] float speed = 5f;
     [SerializeField] float jump = 10f;
 
+    [SerializeField] float knockbackForce = 5f;
+    public UnityEvent OnShoot;
     Vector2 movement;
 
-    // Kiểm tra Player có đang chạm đất không
-    bool isGrounded = false;
-
-    // Số lượng Coin
-    int coinCount = 0;
+    bool IsGround = false;
 
     void Awake()
     {
         MoveAction = InputSystem.actions.FindAction("MoveTopDown");
         JumpAction = InputSystem.actions.FindAction("Jump");
-        AttackAction = InputSystem.actions.FindAction("Attack");
-
-        rb = GetComponent<Rigidbody2D>();
+        ShootAction = InputSystem.actions.FindAction("Shoot");
     }
 
     void Update()
     {
-        //Di chuyển
         movement = MoveAction.ReadValue<Vector2>();
 
-        rb.linearVelocity = new Vector2(
-            movement.x * speed,
-            rb.linearVelocity.y
-        );
+        rb.linearVelocity = new Vector2(movement.x * speed, rb.linearVelocity.y);
 
-
-        // NHẢY
-        if (JumpAction.WasPerformedThisFrame() && isGrounded)
+        if(JumpAction.WasPerformedThisFrame() && IsGround)
         {
             rb.linearVelocityY = jump;
         }
 
-
-        // TẤN CÔNG
-        if (AttackAction.WasPerformedThisFrame())
+        if(ShootAction.WasPerformedThisFrame())
         {
-            Debug.Log("Attack");
+            Shoot();
         }
     }
 
+    void Shoot()
+    {
+        Debug.Log("Player bắn");
 
-    // KIỂM TRA CHẠM ĐẤT
+        OnShoot.Invoke();
+
+        rb.AddForce(Vector2.left * knockbackForce, ForceMode2D.Impulse);
+    }
+
     void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if(collision.gameObject.CompareTag("Ground"))
         {
-            isGrounded = true;
+            IsGround = true;
         }
     }
 
     void OnCollisionExit2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if(collision.gameObject.CompareTag("Ground"))
         {
-            isGrounded = false;
-        }
-    }
-    // NHẶT COIN
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Coin"))
-        {
-            coinCount++;
-
-            Debug.Log("Coin: " + coinCount);
-
-            Destroy(other.gameObject);
+            IsGround = false;
         }
     }
 }
-
